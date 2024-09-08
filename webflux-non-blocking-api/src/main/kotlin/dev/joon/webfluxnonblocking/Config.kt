@@ -21,12 +21,11 @@ class Controller(
 }
 
 interface Repository : ReactiveCrudRepository<MyEntity, Long> {
-    @Query("SELECT pg_sleep(1)")
-    fun callDb(): Mono<Void>
+    @Query("SELECT 1 as result FROM (SELECT pg_sleep(1)) as t")
+    fun callDb(): Mono<Int>
 }
 
 @Table
 class MyEntity(
-    @Id
-    var id: Long
+    @Id var id: Long
 )
