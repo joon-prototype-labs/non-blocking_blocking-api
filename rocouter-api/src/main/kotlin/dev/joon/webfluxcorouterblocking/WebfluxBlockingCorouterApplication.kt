@@ -1,4 +1,4 @@
-package dev.joon.webfluxblocking
+package dev.joon.webfluxcorouterblocking
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
