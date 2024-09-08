@@ -1,4 +1,4 @@
-package dev.joon.webfluxblockingcorouter
+package dev.joon.webfluxblocking
 
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

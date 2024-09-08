@@ -38,12 +38,10 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.plugin.jpa")
 
     dependencies {
-        implementation("org.springframework.boot:spring-boot-starter-data-jpa")
         implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
         implementation("org.jetbrains.kotlin:kotlin-reflect")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
         developmentOnly("org.springframework.boot:spring-boot-docker-compose")
-        runtimeOnly("org.postgresql:postgresql")
         testImplementation("org.springframework.boot:spring-boot-starter-test")
         testImplementation("io.projectreactor:reactor-test")
         testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")

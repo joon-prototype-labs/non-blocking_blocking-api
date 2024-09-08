@@ -6,8 +6,10 @@ export const options = {
     duration: '30s', // 테스트 지속 시간
 };
 
-let port = 18000 // webflux + coRouter
-//let port = 18001 // webmvc + controller
+let port = 18000 // webflux + coRouter + jpa
+//let port = 18001 // webmvc + controller + jpa
+//let port = 18002 // webflux + reactive + jpa
+//let port = 18003 // webflux + reactive + r2dbc
 
 export default function () {
     const params = {
