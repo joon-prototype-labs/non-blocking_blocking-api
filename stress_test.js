@@ -16,6 +16,6 @@ export default function () {
         timeout: '8s',
     };
 
-    const res = http.get('http://localhost:' + port + '/ask', params);
+    http.get('http://localhost:' + port + '/ask', params);
     sleep(0.5);
 }
