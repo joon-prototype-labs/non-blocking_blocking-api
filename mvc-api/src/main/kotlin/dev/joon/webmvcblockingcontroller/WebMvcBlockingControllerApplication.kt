@@ -1,11 +1,11 @@
-package dev.joon.webfluxblockingcorouter
+package dev.joon.webmvcblockingcontroller
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class WebfluxBlockingRocouterApplication
+class WebMvcBlockingControllerApplication
 
 fun main(args: Array<String>) {
-    runApplication<WebfluxBlockingRocouterApplication>(*args)
+    runApplication<WebMvcBlockingControllerApplication>(*args)
 }

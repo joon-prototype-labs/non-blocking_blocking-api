@@ -1,4 +1,4 @@
-package dev.joon.webmvcblockingrouter
+package dev.joon.webmvcblockingcontroller
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest

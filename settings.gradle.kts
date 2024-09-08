@@ -1,4 +1,4 @@
-rootProject.name = "webflux-blocking-rocouter"
+rootProject.name = "webflux-blocking-corouter"
 
 include(
     "rocouter-api",
