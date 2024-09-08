@@ -1,8 +1,8 @@
 rootProject.name = "webflux-blocking-corouter"
 
 include(
-    "rocouter-api",
     "mvc-api",
+    "corouter-api",
     "webflux-non-blocking-api",
     "webflux-blocking-api",
 )
