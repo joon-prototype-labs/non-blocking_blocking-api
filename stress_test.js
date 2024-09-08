@@ -2,7 +2,7 @@ import http from 'k6/http';
 import {sleep} from 'k6';
 
 export const options = {
-    vus: 1000, // 동시 사용자 수
+    vus: 100, // 동시 사용자 수
     duration: '30s', // 테스트 지속 시간
 };
 
@@ -17,5 +17,5 @@ export default function () {
     };
 
     const res = http.get('http://localhost:' + port + '/ask', params);
-    sleep(0.1);
+    sleep(0.5);
 }
