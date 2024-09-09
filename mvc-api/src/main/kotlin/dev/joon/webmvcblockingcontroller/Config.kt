@@ -15,13 +15,18 @@ class Controller(
     @GetMapping("/ask")
     fun ask(): Map<String, String> {
         repository.callDb()
-        sleep(500)
-        return mapOf("message" to "HI!")
+        val startTime = System.currentTimeMillis()
+        var i = 0L
+        while (System.currentTimeMillis() - startTime < 500) {
+            i += startTime
+        }
+        val response = mapOf("message" to "HI!$i")
+        return response
     }
 }
 
 interface Repository : JpaRepository<MyEntity, Long> {
-    @Query(nativeQuery = true, value = "select pg_sleep(1)")
+    @Query(nativeQuery = true, value = "select pg_sleep(0.1)")
     fun callDb(): Unit
 }
 
