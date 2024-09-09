@@ -1,6 +1,5 @@
 package dev.joon.webfluxnonblocking
 
-import kotlinx.coroutines.reactive.awaitFirst
 import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.relational.core.mapping.Table
@@ -14,9 +13,9 @@ class Controller(
     private val repository: Repository,
 ) {
     @GetMapping("/ask")
-    suspend fun ask(): Map<String, String> {
-        repository.callDb().awaitFirst()
-        return mapOf("message" to "HI!")
+    fun ask(): Mono<Map<String, String>> {
+        return repository.callDb()
+            .then(Mono.just(mapOf("message" to "HI!")))
     }
 }
 

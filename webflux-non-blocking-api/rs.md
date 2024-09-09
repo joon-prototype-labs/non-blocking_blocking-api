@@ -21,3 +21,32 @@
      vus_max........................: 100    min=100    max=100
 
 ```
+
+위 결과가 이상해서 로그 확인해보니까 netty에서 Memory Leak 에러 떠서 thread-pool 조정 후 다시 테스트.
+
+근데 이러면 적절한 조건이 아닌 것 같아 다시 테스트 수행할 예정
+
+```properties
+spring.r2dbc.pool.max-size= 20
+spring.r2dbc.pool.initial-size= 10
+```
+
+```
+     data_received..................: 58 kB 1.7 kB/s
+     data_sent......................: 55 kB 1.6 kB/s
+     http_req_blocked...............: avg=681.07µs min=0s    med=4µs    max=6.32ms p(90)=4.12ms p(95)=4.83ms  
+     http_req_connecting............: avg=507.99µs min=0s    med=0s     max=4.32ms p(90)=3.17ms p(95)=3.7ms   
+     http_req_duration..............: avg=4.42s    min=1.59s med=4.56s  max=5.89s  p(90)=4.59s  p(95)=4.62s   
+       { expected_response:true }...: avg=4.42s    min=1.59s med=4.56s  max=5.89s  p(90)=4.59s  p(95)=4.62s   
+     http_req_failed................: 0.00% ✓ 0         ✗ 660  
+     http_req_receiving.............: avg=62.38µs  min=6µs   med=36µs   max=1.13ms p(90)=108µs  p(95)=165.39µs
+     http_req_sending...............: avg=52.79µs  min=2µs   med=13.5µs max=5.5ms  p(90)=52.1µs p(95)=115.29µs
+     http_req_tls_handshaking.......: avg=0s       min=0s    med=0s     max=0s     p(90)=0s     p(95)=0s      
+     http_req_waiting...............: avg=4.42s    min=1.59s med=4.56s  max=5.89s  p(90)=4.59s  p(95)=4.62s   
+     http_reqs......................: 660   19.039338/s
+     iteration_duration.............: avg=4.93s    min=2.1s  med=5.06s  max=6.4s   p(90)=5.09s  p(95)=5.13s   
+     iterations.....................: 660   19.039338/s
+     vus............................: 20    min=20      max=100
+     vus_max........................: 100   min=100     max=100
+
+```
