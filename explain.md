@@ -6,7 +6,7 @@
     - vuser's api request: every 0.5 seconds
     - query call delay time: 1s
 - explain
-    - 초당 200번의 요청, 총 60,000(200*30)의 요청 발생
+    - (체크 필요) 아마 점직적으로 요청 빈도를 높인 것 같음. 요청 횟수는 400~500 사이로 발생함.
     - DB 단에서 의도적으로 쿼리를 delay하면서 DB단 병목 발생시킴.
     - 프로젝트 별 성능 비교 
       - TODO 작성 예정: 요청 처리 시간, 성공률, 네트워크 접속 시간(blocking으로 인한 이벤트 루프 delay?, 원인 파악 필요) 
