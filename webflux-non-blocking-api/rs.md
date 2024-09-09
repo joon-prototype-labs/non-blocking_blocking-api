@@ -22,7 +22,7 @@
 
 ```
 
-위 결과가 이상해서 로그 확인해보니까 netty에서 Memory Leak 에러 떠서 thread-pool 조정 후 다시 테스트.
+위 결과가 이상해서 로그 확인해보니까 netty에서 Memory Leak 에러가 뜨는데 r2dbc 병목으로 보여서 r2dbc thread-pool 조정 후 다시 테스트.
 
 근데 이러면 적절한 조건이 아닌 것 같아 다시 테스트 수행할 예정
 
