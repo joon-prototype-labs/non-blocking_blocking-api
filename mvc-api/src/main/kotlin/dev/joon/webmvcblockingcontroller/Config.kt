@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
-import java.lang.Thread.sleep
 
 @RestController
 class Controller(
@@ -15,18 +14,19 @@ class Controller(
     @GetMapping("/ask")
     fun ask(): Map<String, String> {
         repository.callDb()
-        val startTime = System.currentTimeMillis()
-        var i = 0L
-        while (System.currentTimeMillis() - startTime < 500) {
-            i += startTime
-        }
-        val response = mapOf("message" to "HI!$i")
+        val response = mapOf("message" to "HI!")
+        return response
+    }
+
+    @GetMapping("/ask-without-db-call")
+    fun askWithoutDbCall(): Map<String, String> {
+        val response = mapOf("message" to "HI!")
         return response
     }
 }
 
 interface Repository : JpaRepository<MyEntity, Long> {
-    @Query(nativeQuery = true, value = "select pg_sleep(0.1)")
+    @Query(nativeQuery = true, value = "select pg_sleep(1)")
     fun callDb(): Unit
 }
 

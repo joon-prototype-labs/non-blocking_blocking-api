@@ -18,19 +18,18 @@ class Config {
     ) = coRouter {
         GET("/ask") { request ->
             repository.callDb()
-            val startTime = System.currentTimeMillis()
-            var i = 0L
-            while (System.currentTimeMillis() - startTime < 500) {
-                i += startTime
-            }
-            val response = mapOf("message" to "HI!$i")
+            val response = mapOf("message" to "HI!$")
+            ServerResponse.ok().bodyValueAndAwait(response)
+        }
+        GET("/ask-without-db-call") { request ->
+            val response = mapOf("message" to "HI!$")
             ServerResponse.ok().bodyValueAndAwait(response)
         }
     }
 }
 
 interface Repository : JpaRepository<MyEntity, Long> {
-    @Query(nativeQuery = true, value = "select pg_sleep(0.1)")
+    @Query(nativeQuery = true, value = "select pg_sleep(1)")
     fun callDb(): Unit
 }
 
