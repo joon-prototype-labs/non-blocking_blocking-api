@@ -18,6 +18,6 @@ export default function () {
 
     http.get('http://localhost:' + port + '/ask', params);
     sleep(0.5);
-    http.get('http://localhost:' + port + '/ask-without-db-call', params);
-    sleep(0.5);
+    // http.get('http://localhost:' + port + '/ask-without-db-call', params);
+    // sleep(0.5);
 }

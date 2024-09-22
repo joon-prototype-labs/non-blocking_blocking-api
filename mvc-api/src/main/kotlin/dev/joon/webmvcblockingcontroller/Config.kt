@@ -38,7 +38,7 @@ class Controller(
 }
 
 interface Repository : JpaRepository<MyEntity, Long> {
-    @Query(nativeQuery = true, value = "select pg_sleep(1)")
+    @Query(nativeQuery = true, value = "select pg_sleep(0.1)")
     fun callDb(): Unit
 }
 
