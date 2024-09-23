@@ -88,3 +88,369 @@ DB 병목을 줄이고, 서버의 연산이 오래 걸린다고 가정함. 쿼�
       - 어느 부분으로 봐도 더 빠른 경우가 없는데?
       - 뭐가 문제일까?
       - 일단 이걸로 거의 몇 주째 틈틈히 확인하고 있어도, 더 효율적이라는것 모르겠으니까... 콜라한테 물어보던가 하고, 일단은 그만 찾기. 이제는 시간낭비야...
+
+## 마지막 
+
+- 혹시 모르니까 연결되어 있는 커넥션 수를 세어볼꺼임.
+  - spring 단에서도 확인해보고, 더 앞단에서도 확인할 수 있으면 하고 싶긴 한데, 가능할지는 모르겠음.
+
+다음은 Test1과 동일한 상황에서 timeout 없이 해본거임.
+
+- 순서대로
+  - webmvc + controller + jpa
+  - webflux + coRouter + jpa
+  - webflux + reactive + r2dbc
+
+결과를 보면 처리율은 webflux 기반의 요청이 더 높게 나옴.    
+반면에 처리 시간은 r2dbc -> mvc -> coRouter 순으로 오래 걸렸고,  
+
+이유는 모르겠지만, webflux 기반의 프로젝트가 DB Blocking이 똑같이 걸리는 상태에서 더 많은 요청을 처리한건 사실임.
+근데 coRouter는 jpa를 사용했으므로 blocking 처럼 동작하고, 대기시간이 길다는 문제가 있음.
+
+(확인해보니 webflux+jpa 조합의 경우 처리율도 낮으면서 대기시간도 길었다.)
+
+근데 딱히 유의미한 결과는 아닌 것 같은게, 모든(4) 프로젝트를 각자 5회 씩 번갈아 수행하니까 다 비슷한 처리율을 보였다.
+
+유의미하게 차이가 있던건 처리 시간이 r2dbc -> mvc -> coRouter, webflux+jpa 순으로 짦았다는건데,      
+r2dbc야 번외로 치고, 앞 단에서 요청을 받는? 시간이 더 빠르다는 말이라고 생각된다. (타임아웃 비율이 높았던 이유) 
+
+그래서 콜라가 그렇게 말한 이유를 알것 같기는 한데, 이게 효과적인건지는 모르겠다. 어치파 처리율이 동일하다면, 먼저 받나 그 나중에 받나 똑같은거 아닌가?  
+
+AI에게 좀 믈어나 보자...
+
+뭐... 대충 머릿속으로도 정리가 된것 같다.     
+
+하지만 어차피 DB 부하가 있는 상태에서, 요청을 먼저 받느냐 나중에 받느냐가 중요한건지 모르겠다.      
+대기열도 차서 연결 거부가 생기는 그런 문제가 없다는걸까?
+
+결국 어느정도 이해는 했지만, 얼마나 효과적인지, 사용할 가치가 있는지는 잘 모르겠다.          
+성능을 위해서 스프링이 제공하는 여러 편리한 기능(+관련 라이브러리)을 사용하는 것에 비해 더 효율적일까? (coRouter는 아무래도 지원이 좀 떨어진다.)       
+
+```
+한국어 요약본
+
+네, 지금까지 논의한 서블릿 기반 서버와 리액티브 서버의 특성을 정리하여 한글로 번역해 드리겠습니다.
+
+## 서버 유형별 특성
+
+### 서블릿 기반 서버 (예: Apache Tomcat)
+
+1. **스레드 풀이 가득 찼을 때:**
+   - 새로운 요청을 즉시 처리할 수 없음
+   - HTTP 연결이 지연되거나 대기열에 추가됨
+   - 대기열이 가득 차면 연결 거부나 TCP 연결 지연 발생 가능
+
+2. **클라이언트 관점:**
+   - 연결 설정에 시간이 오래 걸림
+   - 연결된 후에는 처리가 상대적으로 빠름
+   - 일부 요청은 시간 초과될 수 있음
+
+### 리액티브 서버 (예: Netty)
+
+1. **높은 부하 상황에서:**
+   - 비차단, 이벤트 기반 아키텍처 사용
+   - 적은 수의 스레드로 많은 동시 연결 처리 가능
+   - 새로운 연결을 계속 수락할 수 있음
+   - 요청은 비동기적으로 처리됨
+
+2. **클라이언트 관점:**
+   - 연결이 빠르게 설정됨
+   - 처리 시간이 상대적으로 길게 느껴질 수 있음
+   - 서버는 응답성을 유지하지만 개별 요청 처리가 지연될 수 있음
+
+## 클라이언트 경험 비교
+
+1. **연결 시간:**
+   - 서블릿: 연결 설정에 시간이 오래 걸림
+   - 리액티브: 연결이 빠르게 설정됨
+
+2. **처리 시간:**
+   - 서블릿: 연결 후 처리가 빠름
+   - 리액티브: 많은 동시 요청으로 인해 처리가 느리게 느껴질 수 있음
+
+3. **전반적인 경험:**
+   - 서블릿: "기다렸다가 빨리 처리" - 연결은 느리지만 처리는 빠름
+   - 리액티브: "빠르게 응답하지만 천천히 완료" - 연결은 빠르지만 처리 시간이 길어질 수 있음
+
+두 유형의 서버는 각각 장단점이 있으며, 실제 성능과 확장성은 구체적인 구현, 설정, 처리하는 요청의 특성에 따라 달라질 수 있습니다. 일반적으로 리액티브 시스템은 높은 부하 상황에서 더 나은 전반적인 성능과 확장성을 제공하는 경향이 있습니다.
+
+원본
+
+When a servlet-based web server like Apache Tomcat reaches its maximum thread pool capacity, it handles incoming requests differently compared to a reactive server like Netty. Let's examine both scenarios:
+
+## Servlet-based Server (e.g. Apache Tomcat)
+
+When the thread pool is full in a servlet-based server:
+
+1. The server cannot immediately process new incoming requests.
+
+2. The HTTP connection is not immediately rejected. Instead, the server typically queues incoming requests in a connection backlog.
+
+3. If the backlog queue fills up, one of two things may happen:
+   - The server may reject new connections, returning an HTTP 503 (Service Unavailable) error.
+   - The TCP connection itself may be delayed, as the server's listen backlog queue fills up. This can result in slow connection times for clients.
+
+4. Once threads become available in the pool, queued requests are processed in order.
+
+This behavior can lead to increased latency and potential timeouts for clients if the server remains overloaded for an extended period.
+
+## Reactive Server (e.g. Netty)
+
+Reactive servers like Netty handle high concurrency differently:
+
+1. They use a non-blocking, event-driven architecture that doesn't rely on a thread-per-request model.
+
+2. Instead of a fixed thread pool, they typically use a small number of event loop threads to handle many concurrent connections.
+
+3. When under high load, a reactive server can continue to accept new connections without blocking.
+
+4. Requests are processed asynchronously, allowing the server to handle many more concurrent connections with fewer resources.
+
+5. While individual request processing may be delayed under extreme load, the server remains responsive and can continue accepting new connections.
+
+6. Backpressure mechanisms can be implemented to gracefully handle overload situations without rejecting connections outright.
+
+The key difference is that reactive servers like Netty are designed to handle high concurrency more efficiently, allowing them to scale better under heavy loads compared to traditional servlet-based servers. They can typically maintain responsiveness and continue accepting connections even when processing a large number of concurrent requests.
+
+Citations:
+[1] https://stackshare.io/stackups/netty-vs-tomcat
+[2] https://loadforge.com/guides/tuning-tomcat-thread-pools-for-enhanced-scalability
+[3] https://badrish.net/papers/webserver-TR.pdf
+[4] https://docs.oracle.com/cd/E19146-01/821-1834/geeie/index.html
+[5] https://www.reddit.com/r/learnjava/comments/tqaak5/im_confused_about_how_does_a_spring_boot_web/
+[6] https://www.stefankreidel.io/blog/spring-webmvc-servlet-threading
+[7] https://www.alibabacloud.com/blog/java-development-practices-using-thread-pools-and-thread-variables-properly_600180
+[8] https://www.baeldung.com/java-web-thread-pool-config/
+
+
+Based on the information provided and the characteristics of servlet-based and reactive servers, we can compare how they behave under heavy load from a client's perspective:
+
+## Servlet-based Servers (e.g., Apache Tomcat)
+
+When the thread pool is full due to overload:
+
+1. Connection establishment may be delayed. Clients might experience long wait times before the connection is established[1][2].
+
+2. Once connected, processing is typically completed relatively quickly, as a dedicated thread handles the request.
+
+3. Some requests may time out if they wait in the queue longer than the configured connection timeout[2].
+
+## Reactive Servers (e.g., Netty)
+
+Under the same heavy load:
+
+1. Connections are usually established quickly, as reactive servers can accept new connections without blocking[3].
+
+2. Processing time may feel longer to the client, as the server handles many concurrent requests with fewer threads.
+
+3. The server remains responsive, but individual request processing might be delayed due to the high number of concurrent connections being managed.
+
+## Client Perspective Comparison
+
+From a client's point of view:
+
+1. **Connection Time**: 
+   - Servlet: Longer wait times to establish a connection
+   - Reactive: Quicker connection establishment
+
+2. **Processing Time**:
+   - Servlet: Once connected, processing is typically faster
+   - Reactive: May feel slower due to concurrent handling of many requests
+
+3. **Overall Experience**:
+   - Servlet: "Hurry up and wait" - slow to connect but quick to process
+   - Reactive: "Quick to respond but slow to complete" - fast connection but potentially longer processing times
+
+It's important to note that these characteristics can vary depending on the specific implementation, configuration, and nature of the requests being processed. In practice, reactive systems often provide better overall performance and scalability under high load, despite potentially longer individual request processing times.
+
+Citations:
+[1] https://stackoverflow.com/questions/46633637/requests-take-too-much-time-in-tomcat-8-on-peak-time
+[2] https://www.datadoghq.com/blog/tomcat-architecture-and-performance/
+[3] https://www.linkedin.com/advice/1/how-can-you-improve-response-time-web-service-vmrif
+[4] https://bcho.tistory.com/720
+[5] https://theses.eurasip.org/media/theses/documents/laner-markus-analyzing-packet-delay-in-reactive-networks.pdf
+[6] https://loadforge.com/guides/tuning-tomcat-thread-pools-for-enhanced-scalability
+[7] https://www.oreilly.com/library/view/java-programming-with/059600088X/ch04s02.html
+[8] https://loadforge.com/guides/fine-tuning-tomcat-for-high-traffic-loads
+```
+
+
+```
+➜  webflux-blocking-rocouter git:(main) ✗ k6 run ./stress_test.js
+
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  / __________ \  |__| \__\ \_____/ .io
+
+     execution: local
+        script: ./stress_test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 1m0s max duration (incl. graceful stop):
+              * default: 100 looping VUs for 30s (gracefulStop: 30s)
+
+
+     data_received..................: 50 kB 1.3 kB/s
+     data_sent......................: 29 kB 752 B/s
+     http_req_blocked...............: avg=2.78ms   min=0s    med=8µs     max=18.19ms p(90)=11.62ms p(95)=14.73ms
+     http_req_connecting............: avg=251.66µs min=0s    med=0s      max=3.4ms   p(90)=909.8µs p(95)=1.1ms  
+     http_req_duration..............: avg=9.36s    min=2.84s med=9.63s   max=13.09s  p(90)=10.87s  p(95)=12.02s 
+       { expected_response:true }...: avg=9.36s    min=2.84s med=9.63s   max=13.09s  p(90)=10.87s  p(95)=12.02s 
+     http_req_failed................: 0.00% ✓ 0        ✗ 350  
+     http_req_receiving.............: avg=3.65ms   min=7µs   med=162.5µs max=31.15ms p(90)=15.36ms p(95)=17.34ms
+     http_req_sending...............: avg=954.46µs min=4µs   med=32µs    max=10.93ms p(90)=4.23ms  p(95)=5.56ms 
+     http_req_tls_handshaking.......: avg=0s       min=0s    med=0s      max=0s      p(90)=0s      p(95)=0s     
+     http_req_waiting...............: avg=9.35s    min=2.81s med=9.63s   max=13.09s  p(90)=10.85s  p(95)=12.01s 
+     http_reqs......................: 350   8.948771/s
+     iteration_duration.............: avg=9.86s    min=3.38s med=10.13s  max=13.61s  p(90)=11.37s  p(95)=12.53s 
+     iterations.....................: 350   8.948771/s
+     vus............................: 10    min=10     max=100
+     vus_max........................: 100   min=100    max=100
+
+
+running (0m39.1s), 000/100 VUs, 350 complete and 0 interrupted iterations
+default ✓ [======================================] 100 VUs  30s
+➜  webflux-blocking-rocouter git:(main) ✗ k6 run ./stress_test.js
+
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  / __________ \  |__| \__\ \_____/ .io
+
+     execution: local
+        script: ./stress_test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 1m0s max duration (incl. graceful stop):
+              * default: 100 looping VUs for 30s (gracefulStop: 30s)
+
+
+     data_received..................: 34 kB 848 B/s
+     data_sent......................: 32 kB 801 B/s
+     http_req_blocked...............: avg=2.38ms   min=0s    med=4µs   max=10.52ms p(90)=9.5ms   p(95)=9.79ms  
+     http_req_connecting............: avg=816.92µs min=0s    med=0s    max=4.08ms  p(90)=3.32ms  p(95)=3.58ms  
+     http_req_duration..............: avg=8.78s    min=1.57s med=7.68s max=36.28s  p(90)=15.78s  p(95)=23.04s  
+       { expected_response:true }...: avg=8.78s    min=1.57s med=7.68s max=36.28s  p(90)=15.78s  p(95)=23.04s  
+     http_req_failed................: 0.00% ✓ 0        ✗ 380  
+     http_req_receiving.............: avg=155.67µs min=6µs   med=31µs  max=10.42ms p(90)=228.3µs p(95)=561.19µs
+     http_req_sending...............: avg=53.1µs   min=3µs   med=14µs  max=2.72ms  p(90)=85.5µs  p(95)=183.94µs
+     http_req_tls_handshaking.......: avg=0s       min=0s    med=0s    max=0s      p(90)=0s      p(95)=0s      
+     http_req_waiting...............: avg=8.78s    min=1.57s med=7.68s max=36.28s  p(90)=15.78s  p(95)=23.04s  
+     http_reqs......................: 380   9.530058/s
+     iteration_duration.............: avg=9.28s    min=2.07s med=8.18s max=36.79s  p(90)=16.28s  p(95)=23.55s  
+     iterations.....................: 380   9.530058/s
+     vus............................: 10    min=10     max=100
+     vus_max........................: 100   min=100    max=100
+
+
+running (0m39.9s), 000/100 VUs, 380 complete and 0 interrupted iterations
+default ✓ [======================================] 100 VUs  30s
+➜  webflux-blocking-rocouter git:(main) ✗ k6 run ./stress_test.js
+
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  / __________ \  |__| \__\ \_____/ .io
+
+     execution: local
+        script: ./stress_test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 1m0s max duration (incl. graceful stop):
+              * default: 100 looping VUs for 30s (gracefulStop: 30s)
+
+
+     data_received..................: 33 kB 835 B/s
+     data_sent......................: 32 kB 797 B/s
+     http_req_blocked...............: avg=1.15ms   min=1µs   med=7µs    max=5.52ms p(90)=4.51ms  p(95)=4.74ms  
+     http_req_connecting............: avg=836.05µs min=0s    med=0s     max=3.75ms p(90)=3.29ms  p(95)=3.47ms  
+     http_req_duration..............: avg=8.81s    min=1.95s med=9.57s  max=11.31s p(90)=9.63s   p(95)=10.01s  
+       { expected_response:true }...: avg=8.81s    min=1.95s med=9.57s  max=11.31s p(90)=9.63s   p(95)=10.01s  
+     http_req_failed................: 0.00% ✓ 0        ✗ 380  
+     http_req_receiving.............: avg=167.41µs min=10µs  med=73µs   max=4.34ms p(90)=280.9µs p(95)=549.15µs
+     http_req_sending...............: avg=105.03µs min=5µs   med=29µs   max=1.06ms p(90)=400.1µs p(95)=502.29µs
+     http_req_tls_handshaking.......: avg=0s       min=0s    med=0s     max=0s     p(90)=0s      p(95)=0s      
+     http_req_waiting...............: avg=8.81s    min=1.95s med=9.57s  max=11.31s p(90)=9.63s   p(95)=10.01s  
+     http_reqs......................: 380   9.484307/s
+     iteration_duration.............: avg=9.31s    min=2.45s med=10.07s max=11.82s p(90)=10.13s  p(95)=10.52s  
+     iterations.....................: 380   9.484307/s
+     vus............................: 10    min=10     max=100
+     vus_max........................: 100   min=100    max=100
+
+
+running (0m40.1s), 000/100 VUs, 380 complete and 0 interrupted iterations
+default ✓ [======================================] 100 VUs  30s
+➜  webflux-blocking-rocouter git:(main) ✗ 
+```
+
+
+coRouter 로그
+```
+ask: Request started at 2024-09-23T02:30:38.948566Z. Active connections: 10
+2024-09-23T11:30:39.954+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-5] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.954112Z, took 1006 ms. Active connections: 9
+2024-09-23T11:30:39.954+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-2] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.954220Z, took 1006 ms. Active connections: 8
+2024-09-23T11:30:39.954+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-8] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.954828Z, took 1008 ms. Active connections: 7
+2024-09-23T11:30:39.955+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-1] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.955297Z, took 1008 ms. Active connections: 6
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-1] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.957335Z. Active connections: 7
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-8] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.957402Z. Active connections: 8
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-3] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.957517Z, took 1009 ms. Active connections: 7
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [tor-http-nio-10] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.957557Z, took 1009 ms. Active connections: 6
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-6] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.957618Z, took 1009 ms. Active connections: 5
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-4] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.957633Z, took 1009 ms. Active connections: 3
+2024-09-23T11:30:39.957+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-7] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:30:39.957618Z, took 1009 ms. Active connections: 4
+2024-09-23T11:30:39.958+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-2] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.958506Z. Active connections: 5
+2024-09-23T11:30:39.958+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-3] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.958506Z. Active connections: 4
+2024-09-23T11:30:39.958+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-4] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.958583Z. Active connections: 6
+2024-09-23T11:30:39.958+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-5] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.958623Z. Active connections: 7
+2024-09-23T11:30:39.958+09:00  INFO 58464 --- [webflux-blocking-corouter] [ctor-http-nio-6] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:30:39.958728Z. Active connections: 8
+```
+
+mvc 로그
+
+```
+2024-09-23T11:30:04.430+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-39] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:04.430306Z. Active connections: 98
+2024-09-23T11:30:04.430+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-84] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:04.430405Z. Active connections: 99
+2024-09-23T11:30:04.431+09:00  INFO 58370 --- [webmvc-blocking-controller] [io-18000-exec-1] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:04.431564Z. Active connections: 100
+2024-09-23T11:30:04.930+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-24] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.930287Z, took 9789 ms. Active connections: 99
+2024-09-23T11:30:04.930+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-53] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.930839Z, took 9789 ms. Active connections: 98
+2024-09-23T11:30:04.932+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-40] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.932691Z, took 9792 ms. Active connections: 97
+2024-09-23T11:30:04.933+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-45] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.933292Z, took 9792 ms. Active connections: 96
+2024-09-23T11:30:04.935+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-35] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.935414Z, took 9794 ms. Active connections: 95
+2024-09-23T11:30:04.935+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-86] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.935489Z, took 9794 ms. Active connections: 93
+2024-09-23T11:30:04.935+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-78] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.935598Z, took 9794 ms. Active connections: 92
+2024-09-23T11:30:04.935+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-96] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.935862Z, took 9794 ms. Active connections: 91
+2024-09-23T11:30:04.935+09:00  INFO 58370 --- [webmvc-blocking-controller] [io-18000-exec-9] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.935875Z, took 9795 ms. Active connections: 90
+2024-09-23T11:30:04.935+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-42] d.j.webmvcblockingcontroller.Controller  : ask: Request ended at 2024-09-23T02:30:04.935414Z, took 9794 ms. Active connections: 94
+2024-09-23T11:30:05.438+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-53] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.438451Z. Active connections: 92
+2024-09-23T11:30:05.438+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-40] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.438825Z. Active connections: 93
+2024-09-23T11:30:05.439+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-45] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.439163Z. Active connections: 94
+2024-09-23T11:30:05.438+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-24] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.438406Z. Active connections: 91
+2024-09-23T11:30:05.440+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-78] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.440565Z. Active connections: 95
+2024-09-23T11:30:05.440+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-96] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.440838Z. Active connections: 96
+2024-09-23T11:30:05.440+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-42] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.440843Z. Active connections: 97
+2024-09-23T11:30:05.440+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-35] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.440865Z. Active connections: 98
+2024-09-23T11:30:05.440+09:00  INFO 58370 --- [webmvc-blocking-controller] [io-18000-exec-9] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.440865Z. Active connections: 99
+2024-09-23T11:30:05.440+09:00  INFO 58370 --- [webmvc-blocking-controller] [o-18000-exec-86] d.j.webmvcblockingcontroller.Controller  : ask: Request started at 2024-09-23T02:30:05.440877Z. Active connections: 100
+```
+
+r2dbc 로그 - (아마 Mono 기반의 처리 방식이라 뭔가 다르게 처리되었을 것으로 보임)
+```
+2024-09-23T11:31:29.276+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-8] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:29.276275Z. Active connections: 1
+2024-09-23T11:31:29.276+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-8] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:29.276435Z, took 0 ms. Active connections: 0
+2024-09-23T11:31:29.291+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-5] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:29.291103Z. Active connections: 1
+2024-09-23T11:31:29.291+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-5] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:29.291297Z, took 0 ms. Active connections: 0
+2024-09-23T11:31:29.328+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-3] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:29.328770Z. Active connections: 1
+2024-09-23T11:31:29.328+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-3] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:29.328920Z, took 0 ms. Active connections: 0
+2024-09-23T11:31:29.362+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-1] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:29.362575Z. Active connections: 1
+2024-09-23T11:31:29.362+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-1] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:29.362731Z, took 0 ms. Active connections: 0
+2024-09-23T11:31:30.093+09:00  INFO 58315 --- [webflux-non-blocking] [tor-http-nio-10] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:30.093142Z. Active connections: 1
+2024-09-23T11:31:30.093+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-2] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:30.093148Z. Active connections: 2
+2024-09-23T11:31:30.093+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-2] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:30.093293Z, took 0 ms. Active connections: 0
+2024-09-23T11:31:30.093+09:00  INFO 58315 --- [webflux-non-blocking] [tor-http-nio-10] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:30.093293Z, took 0 ms. Active connections: 1
+2024-09-23T11:31:30.124+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-4] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:30.124661Z. Active connections: 1
+2024-09-23T11:31:30.124+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-4] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:30.124832Z, took 0 ms. Active connections: 0
+```

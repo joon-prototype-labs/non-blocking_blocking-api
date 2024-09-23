@@ -7,8 +7,8 @@ export const options = {
 };
 
 //let port = 18000 // webmvc + controller + jpa
-let port = 18001 // webflux + coRouter + jpa
-//let port = 18002 // webflux + reactive + jpa
+//let port = 18001 // webflux + coRouter + jpa
+let port = 18002 // webflux + reactive + jpa
 //let port = 18003 // webflux + reactive + r2dbc
 
 export default function () {
