@@ -454,3 +454,12 @@ r2dbc 로그 - (아마 Mono 기반의 처리 방식이라 뭔가 다르게 처�
 2024-09-23T11:31:30.124+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-4] java.lang.ModuleLayer$Controller         : ask: Request started at 2024-09-23T02:31:30.124661Z. Active connections: 1
 2024-09-23T11:31:30.124+09:00  INFO 58315 --- [webflux-non-blocking] [ctor-http-nio-4] java.lang.ModuleLayer$Controller         : ask: Request ended at 2024-09-23T02:31:30.124832Z, took 0 ms. Active connections: 0
 ```
+
+
+## 결론
+
+- DB단 부하가 있다면 성능 차이는 X
+  - 오히려 Netty가 Tomcat 대비 요청 처리 시간이 긴 것처럼 나옴. (이거는 Netty는 요청을 바로 받고, Tomcat은 Queue에서 대기하는건 요청 처리 시간으로 안치는 것 같은데, 그래서 그런듯?)
+- 그러나 어플리케이션 단 성능은 Netty가 더 좋다고 함. (여기서는 검증 X. 팀원 피셜)
+  - 코루틴 사용해서 중간중간에 타 API 호출이 섞였을 때, 더 성능 좋게 처리할 수도 있음.
+  - 즉, 코루틴 + Webflux 자체가 좋다기보다는 비동기 처리 가능한 I/O를 비동기로 처리하는 옵션이 생김. + 어플리케이션(WAS) 성능이 Netty가 더 좋음. 요청도로 볼 수 있을 것 같다. 
