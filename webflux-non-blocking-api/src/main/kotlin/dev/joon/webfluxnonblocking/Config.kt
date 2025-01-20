@@ -30,18 +30,19 @@ fun run(repository: Repository): Mono<Int> {
     val activeConnections = connectionCounter.increment() // 연결 수 증가
     logger.info("ask: Request started at $start. Active connections: $activeConnections")
 
-    val rs = repository.callDb() // DB 호출
+    val rs1 = repository.callDb() // DB 호출 1
+    val rs2 = repository.callDb() // DB 호출 2
 
     val end = Instant.now()
     val duration = java.time.Duration.between(start, end).toMillis()
     val currentConnections = connectionCounter.decrement() // 연결 수 감소
     logger.info("ask: Request ended at $end, took $duration ms. Active connections: $currentConnections")
 
-    return rs
+    return rs1
 }
 
 interface Repository : ReactiveCrudRepository<MyEntity, Long> {
-    @Query("SELECT 1 as result FROM (SELECT pg_sleep(0.01)) as t")
+    @Query("SELECT 1 as result FROM (SELECT pg_sleep(0.02)) as t")
     fun callDb(): Mono<Int>
 }
 

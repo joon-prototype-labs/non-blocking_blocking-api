@@ -23,7 +23,8 @@ class Controller(
         val activeConnections = connectionCounter.increment()
         logger.info("ask: Request started at $start. Active connections: $activeConnections")
 
-        repository.callDb() // DB 호출
+        repository.callDb() // DB 호출 1
+        repository.callDb() // DB 호출 2
 
         val end = Instant.now()
         val duration = java.time.Duration.between(start, end).toMillis()
@@ -42,7 +43,7 @@ class Controller(
 }
 
 interface Repository : JpaRepository<MyEntity, Long> {
-    @Query(nativeQuery = true, value = "select pg_sleep(0.01)")
+    @Query(nativeQuery = true, value = "select pg_sleep(0.02)")
     fun callDb(): Unit
 }
 

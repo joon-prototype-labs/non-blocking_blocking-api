@@ -17,13 +17,14 @@ class Controller(
     fun ask(): Mono<Map<String, String>> {
         return Mono.fromCallable {
             repository.callDb()
+            repository.callDb()
             mapOf("message" to "HI!")
         }
     }
 }
 
 interface Repository : JpaRepository<MyEntity, Long> {
-    @Query(nativeQuery = true, value = "SELECT pg_sleep(0.01)")
+    @Query(nativeQuery = true, value = "SELECT pg_sleep(0.02)")
     @Transactional(readOnly = true)
     fun callDb()
 }

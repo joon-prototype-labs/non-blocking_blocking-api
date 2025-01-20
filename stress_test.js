@@ -5,8 +5,8 @@ export const options = {
     scenarios: {
         stress_test: {
             executor: 'shared-iterations',
-            vus: 2000,           // 2000 virtual users
-            iterations: 50000,   // 5만 번 반복
+            vus: 3000,           // 3000 virtual users
+            iterations: 30000,   // 1만 번 반복
             maxDuration: '5m'    // 최대 5분 제한
         }
     }
