@@ -41,7 +41,7 @@ fun run(repository: Repository): Mono<Int> {
 }
 
 interface Repository : ReactiveCrudRepository<MyEntity, Long> {
-    @Query("SELECT 1 as result FROM (SELECT pg_sleep(1)) as t")
+    @Query("SELECT 1 as result FROM (SELECT pg_sleep(0.01)) as t")
     fun callDb(): Mono<Int>
 }
 
