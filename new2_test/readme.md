@@ -289,7 +289,7 @@ stress_test ✓ [======================================] 3000 VUs  1m46.7s/5m0s 
 
 corouter
 
-이전 webflux, 
+이전과 비슷한 결과
 
 ```
 WARN[0106] Request Failed                                error="Get \"http://localhost:18001/ask\": dial: i/o timeout"
@@ -316,3 +316,24 @@ WARN[0106] Request Failed                                error="Get \"http://loc
 running (1m46.5s), 0000/3000 VUs, 30000 complete and 0 interrupted iterations
 stress_test ✓ [======================================] 3000 VUs  1m46.5s/5m0s  30000/30000 shared iters
 ```
+
+## 실행 결과 및 프로파일러 분석
+
+일단 색이 더 까만 붉은색이 있길래 뭔가 했더니 그냥 다른 sleep 상태가 아닌 할당이 안되고 다른 스레드가 실행할 때는 검은색 빈 칸으로 나오는데, 빨간색이랑 검은색이랑 번갈아가면서 나오는게 많아서 색이 진해진거.
+
+일단? RMI TCP Connection~~ 스레드 하나가 많은 점유율을 보이는데, 아마 DB Call을 보내는 역할 같음. 검색해보니까 원격 호출이라는데, JDBC에서 커넥션 객체 통해서 호출할때 쓰는거지 않을까?
+
+mvc와 netty-jpa의 차이점은 MVC는 HikariPool-1 connection adder 가 많은데, netty-jpa는 그렇지 않다는거.
+
+mvc는 snapshot기준 http 요청을 처리하는 스레드가 거의 200개인데, netty-jpa는 10개니까...? 커넥션 객체가 더 필요하지 않다고 판단해서 그런듯?
+
+r2dbc는 reactor-tcp 스레드가 10개 있어서, 이게 DB call을 처리하는 것 같고.
+
+뭐 어쩄든 jpa가 blocking인건 확실하고, 병목이 있는 건 맞는듯? 처리 속도도 느리고 (mvc보다 빨라 보여도 실패를 많이해서 그렇다.)
+
+그럼 결론적으로, jpa 호출은 스레드가 sleep 상태에 빠지므로, 이는 비동기 기반의 성능을 낮추게 됨.
+
+그럼 왜 실패하는가?
+
+EventLoop 모델과 블로킹 DB 호출의 부조화로 인해서, JPA 호출시 스레드가 sleep 상태가 됨.
+이는 EventLoop 스레드를 블로킹하여 다른 요청 처리를 방해하고 -> 결과적으로 새로운 연결 수락이 지연되어 타임아웃 발생.
